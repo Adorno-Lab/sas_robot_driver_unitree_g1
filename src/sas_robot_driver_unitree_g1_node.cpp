@@ -20,8 +20,9 @@ void sig_int_handler(int)
  *   - network_interface (string, mandatory): e.g. "eth0" on the onboard computer, "lo" for unitree_mujoco.
  *   - thread_sampling_time_sec (double, mandatory): period of the control loop, e.g. 0.002.
  *   - twist_timeout_sec (double, optional, default 0.2): a zero twist is sent when no twist arrives in time.
- *   - control_level (string, optional, default "high"): "high" (locomotion controller and rt/arm_sdk) or
- *     "low" (rt/lowstate and rt/lowcmd only; not implemented yet, so the driver throws).
+ *   - control_level (string, optional, default "high"): how the commands are sent. "high" (locomotion
+ *     controller and rt/arm_sdk) or "low" (rt/lowcmd; not implemented yet, so the driver throws). Both
+ *     read the state of the robot from rt/lowstate.
  *
  * The topic prefix is the name of the node (set by the launch file), inside its namespace, e.g. the node
  * "g1_1" in the namespace "sas_g1" serves sas_g1/g1_1/... as in the other SAS robot drivers.

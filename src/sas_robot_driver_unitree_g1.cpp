@@ -74,7 +74,7 @@ RobotDriverUnitreeG1::RobotDriverUnitreeG1(const RobotDriverUnitreeG1Configurati
 {
     impl_->control_level_ = configuration.control_level;
     if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
-        throw std::runtime_error("RobotDriverUnitreeG1: the low-level control (rt/lowstate and rt/lowcmd) "
+        throw std::runtime_error("RobotDriverUnitreeG1: the low-level control (commands through rt/lowcmd) "
                                  "is not implemented yet. Use the high-level control.");
 
     impl_->hardware_ = std::make_shared<DriverUnitreeG1>(shutdown_signaler,

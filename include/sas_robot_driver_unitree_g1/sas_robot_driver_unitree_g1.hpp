@@ -12,9 +12,12 @@ namespace sas
 struct RobotDriverUnitreeG1Configuration
 {
     /**
-     * @brief How the driver controls the robot.
-     *   - HIGH_LEVEL: Unitree's locomotion controller (loco client) and rt/arm_sdk.
-     *   - LOW_LEVEL: rt/lowstate and rt/lowcmd only (no loco client). Not implemented yet.
+     * @brief How the driver commands the robot. Both levels read the state of the robot (joints and
+     *        IMU) from rt/lowstate; they only differ in how the commands are sent.
+     *   - HIGH_LEVEL: through Unitree's locomotion controller (loco client, for the twist) and
+     *     rt/arm_sdk (for the waist and the arms).
+     *   - LOW_LEVEL: through rt/lowcmd, for every joint (no loco client and no rt/arm_sdk).
+     *     Not implemented yet.
      */
     enum class CONTROL_LEVEL{
         HIGH_LEVEL=0,
@@ -30,9 +33,10 @@ struct RobotDriverUnitreeG1Configuration
  * @brief The RobotDriverUnitreeG1 class is the LeggedRobotDriver of the Unitree G1 (29 DoF). It does
  *        not use ROS; run it with LeggedRobotDriverROS.
  *
- * The capabilities depend on RobotDriverUnitreeG1Configuration::CONTROL_LEVEL. Only HIGH_LEVEL is
- * implemented: Unitree's locomotion controller moves the legs, and rt/arm_sdk moves the arms and the
- * waist. The rest of this description is about HIGH_LEVEL. (LOW_LEVEL is planned to command every
+ * The state of the robot (joints and IMU) is always read from rt/lowstate. The capabilities depend on
+ * RobotDriverUnitreeG1Configuration::CONTROL_LEVEL, which sets how the commands are sent. Only
+ * HIGH_LEVEL is implemented: Unitree's locomotion controller moves the legs, and rt/arm_sdk moves the
+ * arms and the waist. The rest of this description is about HIGH_LEVEL. (LOW_LEVEL is planned to command every
  * limb through rt/lowcmd, in IDLE and STANDING only, with no twist, base height, or base orientation.)
  *
  * Limbs (served on \<prefix\>/\<name\>), with the joint layout of unitree_drivers'
