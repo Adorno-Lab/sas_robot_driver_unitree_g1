@@ -3,9 +3,9 @@
 <package format="3">
   <name>sas_robot_driver_unitree_g1</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>SmartArmStack driver of the Unitree G1 (29 DoF) in high-level control, following the legged robot driver standard of sas_tools (floating base with five limbs).</description>
   <maintainer email="juanjqogm@gmail.com">s55322jq</maintainer>
-  <license>TODO: License declaration</license>
+  <license>LGPL-2.1-only</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
@@ -13,9 +13,6 @@
   <depend>sas_core</depend>
   <depend>sas_common</depend>
   <depend>sas_robot_driver</depend>
-  <depend>geometry_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>sensor_msgs</depend>
   <depend>sas_tools</depend>
 
   <exec_depend>launch</exec_depend>
