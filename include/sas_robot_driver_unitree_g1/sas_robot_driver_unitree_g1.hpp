@@ -11,14 +11,29 @@ namespace sas
 
 struct RobotDriverUnitreeG1Configuration
 {
+    /**
+     * @brief How the driver controls the robot.
+     *   - HIGH_LEVEL: Unitree's locomotion controller (loco client) and rt/arm_sdk.
+     *   - LOW_LEVEL: rt/lowstate and rt/lowcmd only (no loco client). Not implemented yet.
+     */
+    enum class CONTROL_LEVEL{
+        HIGH_LEVEL=0,
+        LOW_LEVEL,
+    };
+
     int32_t domain_id;              ///< DDS domain: 0 for the real robot, 1 for the simulation.
     std::string network_interface;  ///< e.g. "eth0" on the onboard computer, or "enp6s0" on a desktop.
+    CONTROL_LEVEL control_level{CONTROL_LEVEL::HIGH_LEVEL};
 };
 
 /**
- * @brief The RobotDriverUnitreeG1 class is the LeggedRobotDriver of the Unitree G1 (29 DoF) in
- *        high-level control: Unitree's locomotion controller moves the legs, and rt/arm_sdk
- *        moves the arms and the waist. It does not use ROS; run it with LeggedRobotDriverROS.
+ * @brief The RobotDriverUnitreeG1 class is the LeggedRobotDriver of the Unitree G1 (29 DoF). It does
+ *        not use ROS; run it with LeggedRobotDriverROS.
+ *
+ * The capabilities depend on RobotDriverUnitreeG1Configuration::CONTROL_LEVEL. Only HIGH_LEVEL is
+ * implemented: Unitree's locomotion controller moves the legs, and rt/arm_sdk moves the arms and the
+ * waist. The rest of this description is about HIGH_LEVEL. (LOW_LEVEL is planned to command every
+ * limb through rt/lowcmd, in IDLE and STANDING only, with no twist, base height, or base orientation.)
  *
  * Limbs (served on \<prefix\>/\<name\>), with the joint layout of unitree_drivers'
  * DriverUnitreeLowState::LIMB:
@@ -53,8 +68,9 @@ public:
 
     /**
      * @brief RobotDriverUnitreeG1 Creates the driver and its five limbs. It does not connect yet.
-     * @param configuration The DDS domain and network interface.
+     * @param configuration The DDS domain, the network interface, and the control level.
      * @param shutdown_signaler Shared with LeggedRobotDriverROS.
+     * @throws std::runtime_error if the control level is LOW_LEVEL, which is not implemented yet.
      * @throws std::logic_error if the joint layout of unitree_drivers does not match the limb table
      *         of this driver.
      */
@@ -105,12 +121,14 @@ public:
     DQ get_linear_acceleration() override;
 
     /**
-     * @brief get_supported_high_level_modes Returns IDLE, STANDING, and WALKING.
+     * @brief get_supported_high_level_modes Returns IDLE, STANDING, and WALKING in HIGH_LEVEL, and IDLE
+     *        and STANDING in LOW_LEVEL.
      */
     std::vector<HIGH_LEVEL_MODE> get_supported_high_level_modes() const override;
 
     /**
-     * @brief is_supported Returns true only for LEGGED_FUNCTIONALITY::TWIST.
+     * @brief is_supported Returns true only for LEGGED_FUNCTIONALITY::TWIST in HIGH_LEVEL, and false
+     *        for every functionality in LOW_LEVEL.
      */
     bool is_supported(const LEGGED_FUNCTIONALITY& functionality) const override;
 
@@ -120,8 +138,8 @@ public:
     std::vector<LimbEntry> get_limbs() const override;
 
     /**
-     * @brief get_commandable_limbs In STANDING, the waist and the arms; otherwise, none. The legs are
-     *        never commandable in high-level control.
+     * @brief get_commandable_limbs In STANDING, the waist and the arms in HIGH_LEVEL (the legs are moved
+     *        by the locomotion controller), and every limb in LOW_LEVEL. None in the other modes.
      * @return One entry per limb of get_limbs().
      */
     std::vector<bool> get_commandable_limbs() const override;

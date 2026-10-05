@@ -8,6 +8,9 @@ Real robot (onboard computer):
 Simulation (unitree_mujoco, DDS domain 1 on the loopback interface):
     ros2 launch sas_robot_driver_unitree_g1 start_high_level_driver.py domain_id:=1 network_interface:=lo
 
+The control level is high by default (locomotion controller and rt/arm_sdk). control_level:=low selects the
+low-level control (rt/lowstate and rt/lowcmd only), which is not implemented yet: the driver stops with an error.
+
 Run it in a different terminal window or tab. Be ready to close it, as it activates the real robot if the
 connection is successful.
 """
@@ -35,6 +38,11 @@ def generate_launch_description():
             default_value='eth0',
             description='Network interface: "eth0" on the onboard computer, "lo" for unitree_mujoco.'
         ),
+        DeclareLaunchArgument(
+            'control_level',
+            default_value='high',
+            description='"high" (locomotion controller and rt/arm_sdk) or "low" (rt/lowstate and rt/lowcmd; not implemented yet).'
+        ),
         Node(
             package='sas_robot_driver_unitree_g1',
             executable='sas_robot_driver_unitree_g1_node',
@@ -46,6 +54,7 @@ def generate_launch_description():
                 'network_interface': ParameterValue(LaunchConfiguration('network_interface'), value_type=str),
                 'thread_sampling_time_sec': 0.002,
                 'twist_timeout_sec': 0.2,
+                'control_level': ParameterValue(LaunchConfiguration('control_level'), value_type=str),
             }]
         ),
     ])

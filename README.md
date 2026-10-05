@@ -73,6 +73,7 @@ ros2 launch sas_robot_driver_unitree_g1 start_high_level_driver.py
 |---|---|---|
 | `domain_id` | `0` | DDS domain: `0` for the real robot, `1` for `unitree_mujoco` |
 | `network_interface` | `eth0` | Network interface connected to the robot: `eth0` on the onboard computer, `lo` for `unitree_mujoco` |
+| `control_level` | `high` | `high`: locomotion controller and `rt/arm_sdk`. `low`: `rt/lowstate` and `rt/lowcmd` only (no locomotion controller); **not implemented yet**, the driver stops with an error. |
 
 The node name and namespace in the launch file (`g1_1` in `sas_g1`) define the topic prefix, `sas_g1/g1_1`. The
 launch file also sets the node parameters `thread_sampling_time_sec` (0.002 s) and `twist_timeout_sec` (0.2 s).

@@ -20,6 +20,8 @@ void sig_int_handler(int)
  *   - network_interface (string, mandatory): e.g. "eth0" on the onboard computer, "lo" for unitree_mujoco.
  *   - thread_sampling_time_sec (double, mandatory): period of the control loop, e.g. 0.002.
  *   - twist_timeout_sec (double, optional, default 0.2): a zero twist is sent when no twist arrives in time.
+ *   - control_level (string, optional, default "high"): "high" (locomotion controller and rt/arm_sdk) or
+ *     "low" (rt/lowstate and rt/lowcmd only; not implemented yet, so the driver throws).
  *
  * The topic prefix is the name of the node (set by the launch file), inside its namespace, e.g. the node
  * "g1_1" in the namespace "sas_g1" serves sas_g1/g1_1/... as in the other SAS robot drivers.
@@ -44,12 +46,23 @@ int main(int argc, char** argv)
         sas::get_ros_parameter(node, "network_interface", robot_configuration.network_interface);
         robot_configuration.domain_id = static_cast<int32_t>(domain_id);
 
+        std::string control_level;
+        sas::get_ros_optional_parameter(node, "control_level", control_level, std::string("high"));
+        if (control_level == "high")
+            robot_configuration.control_level = sas::RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::HIGH_LEVEL;
+        else if (control_level == "low")
+            robot_configuration.control_level = sas::RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL;
+        else
+            throw std::invalid_argument("The parameter control_level must be \"high\" or \"low\", but it is \"" +
+                                        control_level + "\".");
+
         sas::LeggedRobotDriverROSConfiguration configuration{};
         configuration.robot_driver_ros.robot_driver_provider_prefix = node->get_name();
         sas::get_ros_parameter(node, "thread_sampling_time_sec", configuration.robot_driver_ros.thread_sampling_time_sec);
         sas::get_ros_optional_parameter(node, "twist_timeout_sec", configuration.twist_timeout_sec, 0.2);
 
-        RCLCPP_INFO_STREAM_ONCE(node->get_logger(), "::Parameters OK: domain_id " << domain_id
+        RCLCPP_INFO_STREAM_ONCE(node->get_logger(), "::Parameters OK: control_level " << control_level
+                                                    << ", domain_id " << domain_id
                                                     << ", network_interface " << robot_configuration.network_interface
                                                     << ", prefix " << node->get_fully_qualified_name()
                                                     << ", thread_sampling_time_sec " << configuration.robot_driver_ros.thread_sampling_time_sec

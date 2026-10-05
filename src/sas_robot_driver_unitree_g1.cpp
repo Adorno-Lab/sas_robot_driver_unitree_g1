@@ -59,6 +59,7 @@ VectorXd _to_vectorxd(const std::vector<double>& values)
 class RobotDriverUnitreeG1::Impl
 {
 public:
+    RobotDriverUnitreeG1Configuration::CONTROL_LEVEL control_level_;
     std::shared_ptr<DriverUnitreeG1> hardware_;
     std::vector<LimbEntry> limbs_;
     std::vector<bool> commandable_in_standing_;
@@ -71,6 +72,11 @@ RobotDriverUnitreeG1::RobotDriverUnitreeG1(const RobotDriverUnitreeG1Configurati
     :LeggedRobotDriver{shutdown_signaler},
     impl_{std::make_unique<RobotDriverUnitreeG1::Impl>()}
 {
+    impl_->control_level_ = configuration.control_level;
+    if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
+        throw std::runtime_error("RobotDriverUnitreeG1: the low-level control (rt/lowstate and rt/lowcmd) "
+                                 "is not implemented yet. Use the high-level control.");
+
     impl_->hardware_ = std::make_shared<DriverUnitreeG1>(shutdown_signaler,
                                                          DriverUnitreeG1::OPERATION_MODE::HIGH_LEVEL,
                                                          configuration.domain_id,
@@ -180,11 +186,15 @@ DQ RobotDriverUnitreeG1::get_linear_acceleration()
 
 std::vector<LeggedRobotDriver::HIGH_LEVEL_MODE> RobotDriverUnitreeG1::get_supported_high_level_modes() const
 {
+    if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
+        return {HIGH_LEVEL_MODE::IDLE, HIGH_LEVEL_MODE::STANDING};  // Nothing walks in low-level control.
     return {HIGH_LEVEL_MODE::IDLE, HIGH_LEVEL_MODE::STANDING, HIGH_LEVEL_MODE::WALKING};
 }
 
 bool RobotDriverUnitreeG1::is_supported(const LEGGED_FUNCTIONALITY &functionality) const
 {
+    if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
+        return false;  // No locomotion controller: no twist, base height, or base orientation.
     return functionality == LEGGED_FUNCTIONALITY::TWIST;
 }
 
@@ -197,6 +207,8 @@ std::vector<bool> RobotDriverUnitreeG1::get_commandable_limbs() const
 {
     if (current_mode_ != HIGH_LEVEL_MODE::STANDING)
         return std::vector<bool>(impl_->limbs_.size(), false);
+    if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
+        return std::vector<bool>(impl_->limbs_.size(), true);  // Every limb, the legs included.
     return impl_->commandable_in_standing_;
 }
 
