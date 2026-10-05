@@ -30,6 +30,7 @@ find_package(unitree_drivers REQUIRED)
 include_directories(../../../../utils/include)
 add_library(${PROJECT_NAME} SHARED
     src/sas_robot_driver_unitree_g1.cpp
+    src/RobotDriverUnitreeG1Limb.cpp
     src/DriverUnitreeG1.cpp
     )
 
