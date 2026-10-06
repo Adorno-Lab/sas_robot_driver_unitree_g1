@@ -12,11 +12,7 @@ find_package(Eigen3 REQUIRED)
 find_package(sas_core REQUIRED)
 find_package(sas_common REQUIRED)
 find_package(sas_robot_driver REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
 find_package(sas_tools REQUIRED)
-find_package(Threads REQUIRED)
 find_package(unitree_drivers REQUIRED)
 
 
@@ -27,9 +23,9 @@ find_package(unitree_drivers REQUIRED)
 # The most common use case is to merge everything you need to export
 # into the same shared library called ${PROJECT_NAME}.
 
-include_directories(../../../../utils/include)
 add_library(${PROJECT_NAME} SHARED
     src/sas_robot_driver_unitree_g1.cpp
+    src/RobotDriverUnitreeG1Limb.cpp
     src/DriverUnitreeG1.cpp
     )
 
@@ -41,22 +37,22 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 ament_target_dependencies(${PROJECT_NAME}
-rclcpp geometry_msgs std_msgs sensor_msgs sas_common sas_core sas_conversions Eigen3 sas_tools
-)
+    sas_core
+    sas_tools
+    Eigen3
+    )
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
-target_include_directories(${PROJECT_NAME}
-    PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    )
-
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(
-Eigen3 rclcpp geometry_msgs std_msgs sensor_msgs sas_common sas_core sas_conversions sas_tools
+    Eigen3
+    sas_core
+    sas_tools
+    unitree_drivers
     )
 
 install(

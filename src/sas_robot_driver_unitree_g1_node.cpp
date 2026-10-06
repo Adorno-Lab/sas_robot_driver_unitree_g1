@@ -1,12 +1,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sas_common/sas_common.hpp>
-
-#include <dqrobotics/utils/DQ_Math.h>
-#include <sas_robot_driver/sas_robot_driver_ros.hpp>
+#include <sas_core/sas_shutdown_signaler.hpp>
+#include <sas_tools/sas_legged_robot_driver_ros.hpp>
 #include <sas_robot_driver_unitree_g1/sas_robot_driver_unitree_g1.hpp>
-#include <marinholab/sas/core/sas_robot_driver.hpp>
-#include <marinholab/sas/core/sas_shutdown_signaler.hpp>
-#include <marinholab/sas/core/eigen3_std_conversions.hpp>
 
 /*********************************************
  * SIGNAL HANDLER
@@ -18,37 +14,65 @@ void sig_int_handler(int)
     shutdown_signaler->shutdown();
 }
 
+/**
+ * Parameters (set by the launch file):
+ *   - domain_id (int, mandatory):            DDS domain: 0 for the real robot, 1 for unitree_mujoco.
+ *   - network_interface (string, mandatory): e.g. "eth0" on the onboard computer, "lo" for unitree_mujoco.
+ *   - thread_sampling_time_sec (double, mandatory): period of the control loop, e.g. 0.002.
+ *   - twist_timeout_sec (double, optional, default 0.2): a zero twist is sent when no twist arrives in time.
+ *   - control_level (string, optional, default "high"): how the commands are sent. "high" (locomotion
+ *     controller and rt/arm_sdk) or "low" (rt/lowcmd; not implemented yet, so the driver throws). Both
+ *     read the state of the robot from rt/lowstate.
+ *
+ * The topic prefix is the name of the node (set by the launch file), inside its namespace, e.g. the node
+ * "g1_1" in the namespace "sas_g1" serves sas_g1/g1_1/... as in the other SAS robot drivers.
+ */
 int main(int argc, char** argv)
 {
     if(signal(SIGINT, sig_int_handler) == SIG_ERR)
         throw std::runtime_error("::Error setting the signal int handler.");
 
-    rclcpp::init(argc, argv);
+    // Keep our SIGINT handler: it signals the shutdown so that the control loop ends and the driver
+    // deinitializes the robot before ROS is shut down.
+    rclcpp::init(argc, argv, rclcpp::InitOptions(), rclcpp::SignalHandlerOptions::None);
     auto node = std::make_shared<rclcpp::Node>("sas_robot_driver_unitree_g1");
 
     try
     {
-        sas::RobotDriverUnitreeG1Configuration robot_configuration;
-        robot_configuration.domain_id = 0; //   real robot: 0   simulation: 1
-        robot_configuration.network_interface = "eth0";// Desktop with Ethernet cable: "enp6s0"; onboard PC: "eth0"  ("lo" doesn't work)
-        robot_configuration.topic_prefix = "sas_g1/g1_1";
-
-        auto robot_driver = std::make_shared<sas::RobotDriverUnitreeG1>(node,
-                                                                        robot_configuration,
-                                                                        shutdown_signaler);
-
         RCLCPP_INFO_STREAM_ONCE(node->get_logger(), "::Loading parameters from parameter server.");
 
-        sas::RobotDriverROSConfiguration robot_driver_ros_configuration;
-        robot_driver_ros_configuration.thread_sampling_time_sec = 0.002;
-        robot_driver_ros_configuration.robot_driver_provider_prefix = robot_configuration.topic_prefix;//node->get_name();
+        int domain_id;
+        sas::RobotDriverUnitreeG1Configuration robot_configuration;
+        sas::get_ros_parameter(node, "domain_id", domain_id);
+        sas::get_ros_parameter(node, "network_interface", robot_configuration.network_interface);
+        robot_configuration.domain_id = static_cast<int32_t>(domain_id);
 
-        sas::RobotDriverROS robot_driver_ros(node,
-                                             robot_driver,
-                                             robot_driver_ros_configuration,
-                                             shutdown_signaler);
-        robot_driver_ros.control_loop();
+        std::string control_level;
+        sas::get_ros_optional_parameter(node, "control_level", control_level, std::string("high"));
+        if (control_level == "high")
+            robot_configuration.control_level = sas::RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::HIGH_LEVEL;
+        else if (control_level == "low")
+            robot_configuration.control_level = sas::RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL;
+        else
+            throw std::invalid_argument("The parameter control_level must be \"high\" or \"low\", but it is \"" +
+                                        control_level + "\".");
 
+        sas::LeggedRobotDriverROSConfiguration configuration{};
+        configuration.robot_driver_ros.robot_driver_provider_prefix = node->get_name();
+        sas::get_ros_parameter(node, "thread_sampling_time_sec", configuration.robot_driver_ros.thread_sampling_time_sec);
+        sas::get_ros_optional_parameter(node, "twist_timeout_sec", configuration.twist_timeout_sec, 0.2);
+
+        RCLCPP_INFO_STREAM_ONCE(node->get_logger(), "::Parameters OK: control_level " << control_level
+                                                    << ", domain_id " << domain_id
+                                                    << ", network_interface " << robot_configuration.network_interface
+                                                    << ", prefix " << node->get_fully_qualified_name()
+                                                    << ", thread_sampling_time_sec " << configuration.robot_driver_ros.thread_sampling_time_sec
+                                                    << ", twist_timeout_sec " << configuration.twist_timeout_sec);
+
+        auto robot_driver = std::make_shared<sas::RobotDriverUnitreeG1>(robot_configuration, shutdown_signaler);
+
+        sas::LeggedRobotDriverROS legged_robot_driver_ros(node, robot_driver, configuration, shutdown_signaler);
+        legged_robot_driver_ros.control_loop();
     }
     catch (const std::exception& e)
     {
@@ -56,5 +80,6 @@ int main(int argc, char** argv)
         std::cerr << std::string("::Exception::") << e.what();
     }
 
+    rclcpp::shutdown();
     return 0;
 }
