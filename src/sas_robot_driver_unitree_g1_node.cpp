@@ -23,6 +23,8 @@ void sig_int_handler(int)
  *   - control_level (string, optional, default "high"): how the commands are sent. "high" (locomotion
  *     controller and rt/arm_sdk) or "low" (rt/lowcmd; not implemented yet, so the driver throws). Both
  *     read the state of the robot from rt/lowstate.
+ *   - base_height_min, base_height_max, base_height_nominal (double, optional, defaults 0.0, 1.0, 0.78):
+ *     limits of the base height, in meters (stand height of the locomotion controller).
  *
  * The topic prefix is the name of the node (set by the launch file), inside its namespace, e.g. the node
  * "g1_1" in the namespace "sas_g1" serves sas_g1/g1_1/... as in the other SAS robot drivers.
@@ -57,6 +59,10 @@ int main(int argc, char** argv)
             throw std::invalid_argument("The parameter control_level must be \"high\" or \"low\", but it is \"" +
                                         control_level + "\".");
 
+        sas::get_ros_optional_parameter(node, "base_height_min", robot_configuration.base_height_min, 0.0);
+        sas::get_ros_optional_parameter(node, "base_height_max", robot_configuration.base_height_max, 1.0);
+        sas::get_ros_optional_parameter(node, "base_height_nominal", robot_configuration.base_height_nominal, 0.78);
+
         sas::LeggedRobotDriverROSConfiguration configuration{};
         configuration.robot_driver_ros.robot_driver_provider_prefix = node->get_name();
         sas::get_ros_parameter(node, "thread_sampling_time_sec", configuration.robot_driver_ros.thread_sampling_time_sec);
@@ -67,7 +73,10 @@ int main(int argc, char** argv)
                                                     << ", network_interface " << robot_configuration.network_interface
                                                     << ", prefix " << node->get_fully_qualified_name()
                                                     << ", thread_sampling_time_sec " << configuration.robot_driver_ros.thread_sampling_time_sec
-                                                    << ", twist_timeout_sec " << configuration.twist_timeout_sec);
+                                                    << ", twist_timeout_sec " << configuration.twist_timeout_sec
+                                                    << ", base_height_min " << robot_configuration.base_height_min
+                                                    << ", base_height_max " << robot_configuration.base_height_max
+                                                    << ", base_height_nominal " << robot_configuration.base_height_nominal);
 
         auto robot_driver = std::make_shared<sas::RobotDriverUnitreeG1>(robot_configuration, shutdown_signaler);
 

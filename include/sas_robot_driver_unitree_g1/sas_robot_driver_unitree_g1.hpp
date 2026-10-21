@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 #include <sas_core/sas_shutdown_signaler.hpp>
 #include <sas_tools/LeggedRobotDriver.hpp>
@@ -27,6 +28,14 @@ struct RobotDriverUnitreeG1Configuration
     int32_t domain_id;              ///< DDS domain: 0 for the real robot, 1 for the simulation.
     std::string network_interface;  ///< e.g. "eth0" on the onboard computer, or "enp6s0" on a desktop.
     CONTROL_LEVEL control_level{CONTROL_LEVEL::HIGH_LEVEL};
+
+    /**
+     * @brief Limits of the base height, in meters, sent to the locomotion controller as the stand height
+     *        (LocoClient::SetStandHeight).
+     */
+    double base_height_min{0.0};
+    double base_height_max{1.0};
+    double base_height_nominal{0.78};
 };
 
 /**
@@ -50,8 +59,9 @@ struct RobotDriverUnitreeG1Configuration
  *   - STANDING: arm control (DriverUnitreeG1::HIGH_MODE::ARM_CONTROL); the robot cannot walk.
  *   - WALKING: locomotion (DriverUnitreeG1::HIGH_MODE::LOCOMOTION); the twist is accepted.
  *
- * Every mode change first stops the robot (zero velocity). Only the twist is supported:
- * neither the base height nor the base orientation can be commanded.
+ * Every mode change first stops the robot (zero velocity). The twist is accepted in WALKING, and the
+ * base height in STANDING and WALKING (it is the stand height of the locomotion controller). The base
+ * orientation is not supported.
  */
 class RobotDriverUnitreeG1: public LeggedRobotDriver
 {
@@ -100,8 +110,8 @@ public:
     void set_target_base_orientation(const DQ& r) override;
 
     /**
-     * @brief set_target_base_height Not supported by the G1 driver.
-     * @throws std::logic_error always (LeggedRobotDriverROS never calls it, since is_supported() is false).
+     * @brief set_target_base_height Sets the stand height of the locomotion controller.
+     * @param base_height The target height, in meters, already clamped to get_base_height_limits().
      */
     void set_target_base_height(const double& base_height) override;
 
@@ -131,10 +141,16 @@ public:
     std::vector<HIGH_LEVEL_MODE> get_supported_high_level_modes() const override;
 
     /**
-     * @brief is_supported Returns true only for LEGGED_FUNCTIONALITY::TWIST in HIGH_LEVEL, and false
-     *        for every functionality in LOW_LEVEL.
+     * @brief is_supported Returns true for LEGGED_FUNCTIONALITY::TWIST, BASE_HEIGHT, and
+     *        BASE_HEIGHT_WHILE_WALKING in HIGH_LEVEL, and false for every functionality in LOW_LEVEL.
      */
     bool is_supported(const LEGGED_FUNCTIONALITY& functionality) const override;
+
+    /**
+     * @brief get_base_height_limits Returns the base height limits of RobotDriverUnitreeG1Configuration.
+     * @return {min, max, nominal}, in meters.
+     */
+    std::tuple<double, double, double> get_base_height_limits() const override;
 
     /**
      * @brief get_limbs Returns left_leg, right_leg, waist, left_arm, and right_arm, in this order.

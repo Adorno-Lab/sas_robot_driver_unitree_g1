@@ -55,6 +55,11 @@ def generate_launch_description():
                 'network_interface': ParameterValue(LaunchConfiguration('network_interface'), value_type=str),
                 'thread_sampling_time_sec': 0.002,
                 'twist_timeout_sec': 0.2,
+                # Stand height of the locomotion controller, in meters. The robot also clamps it to its own
+                # (undocumented) limits: To be confirmed on the robot.
+                'base_height_min': 0.0,
+                'base_height_max': 1.0,
+                'base_height_nominal': 0.78,
                 'control_level': ParameterValue(LaunchConfiguration('control_level'), value_type=str),
             }]
         ),

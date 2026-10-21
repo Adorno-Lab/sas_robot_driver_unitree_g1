@@ -33,14 +33,16 @@ The G1 is a floating base with five limbs. Each limb is a standard SAS robot dri
 | `WALKING` | Locomotion: the twist is accepted; the waist and the arms do not accept targets. |
 
 - Every mode change first stops the robot (zero velocity).
-- Only the twist is supported: `vx`, `vy`, and `wz` (yaw rate). The base height and the base orientation are not
-  supported.
+- The twist is accepted in `WALKING`: `vx`, `vy`, and `wz` (yaw rate).
+- The base height is accepted in `STANDING` and `WALKING`. It is sent as the stand height of the locomotion
+  controller (`LocoClient::SetStandHeight`), so the robot can lower its base, e.g. to reach an object on the ground.
+- The base orientation is not supported.
 
 ## Topics
 
 | Prefix | Topics |
 |---|---|
-| `sas_g1/g1_1/` (base) | `get/info`, `get/status`, `get/imu`, `set/high_level_mode`, `set/target_twist`, `set/watchdog_trigger`, `set/shutdown` |
+| `sas_g1/g1_1/` (base) | `get/info`, `get/status`, `get/imu`, `set/high_level_mode`, `set/target_twist`, `set/target_base_height`, `set/watchdog_trigger`, `set/shutdown` |
 | `sas_g1/g1_1/<limb>/` | the standard SAS joint topics: `get/joint_states`, `get/joint_positions_min`, `get/joint_positions_max`, `set/target_joint_positions`, `set/shutdown` |
 
 See the [topic standard of sas_tools](https://github.com/Adorno-Lab/sas_tools/tree/new_generation#topic-standard) for the message types,
@@ -76,7 +78,11 @@ ros2 launch sas_robot_driver_unitree_g1 start_high_level_driver.py
 | `control_level` | `high` | How the commands are sent; both levels read the state from `rt/lowstate`. `high`: through the locomotion controller and `rt/arm_sdk`. `low`: through `rt/lowcmd`, for every joint; **not implemented yet**, the driver stops with an error. |
 
 The node name and namespace in the launch file (`g1_1` in `sas_g1`) define the topic prefix, `sas_g1/g1_1`. The
-launch file also sets the node parameters `thread_sampling_time_sec` (0.002 s) and `twist_timeout_sec` (0.2 s).
+launch file also sets the node parameters `thread_sampling_time_sec` (0.002 s), `twist_timeout_sec` (0.2 s), and the
+base height limits `base_height_min` (0.0 m), `base_height_max` (1.0 m), and `base_height_nominal` (0.78 m).
+
+The robot also clamps the base height to its own limits, which Unitree does not document. The defaults above are
+wide on purpose; check the real range on the robot and adjust them.
 
 To command the robot, use the clients of sas_tools with these launch parameters (see the
 [example in sas_tools](https://github.com/Adorno-Lab/sas_tools/tree/new_generation#commanding-the-robot)):

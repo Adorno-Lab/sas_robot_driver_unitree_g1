@@ -63,6 +63,7 @@ public:
     std::shared_ptr<DriverUnitreeG1> hardware_;
     std::vector<LimbEntry> limbs_;
     std::vector<bool> commandable_in_standing_;
+    std::tuple<double, double, double> base_height_limits_;
 };
 
 RobotDriverUnitreeG1::~RobotDriverUnitreeG1()=default;
@@ -73,6 +74,9 @@ RobotDriverUnitreeG1::RobotDriverUnitreeG1(const RobotDriverUnitreeG1Configurati
     impl_{std::make_unique<RobotDriverUnitreeG1::Impl>()}
 {
     impl_->control_level_ = configuration.control_level;
+    impl_->base_height_limits_ = {configuration.base_height_min,
+                                  configuration.base_height_max,
+                                  configuration.base_height_nominal};
     if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
         throw std::runtime_error("RobotDriverUnitreeG1: the low-level control (commands through rt/lowcmd) "
                                  "is not implemented yet. Use the high-level control.");
@@ -151,9 +155,9 @@ void RobotDriverUnitreeG1::set_target_base_orientation([[maybe_unused]] const DQ
     throw std::logic_error("RobotDriverUnitreeG1::set_target_base_orientation: not supported.");
 }
 
-void RobotDriverUnitreeG1::set_target_base_height([[maybe_unused]] const double &base_height)
+void RobotDriverUnitreeG1::set_target_base_height(const double &base_height)
 {
-    throw std::logic_error("RobotDriverUnitreeG1::set_target_base_height: not supported.");
+    impl_->hardware_->set_stand_height(base_height);
 }
 
 DQ RobotDriverUnitreeG1::get_orientation()
@@ -195,7 +199,14 @@ bool RobotDriverUnitreeG1::is_supported(const LEGGED_FUNCTIONALITY &functionalit
 {
     if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
         return false;  // No locomotion controller: no twist, base height, or base orientation.
-    return functionality == LEGGED_FUNCTIONALITY::TWIST;
+    return functionality == LEGGED_FUNCTIONALITY::TWIST ||
+           functionality == LEGGED_FUNCTIONALITY::BASE_HEIGHT ||
+           functionality == LEGGED_FUNCTIONALITY::BASE_HEIGHT_WHILE_WALKING;
+}
+
+std::tuple<double, double, double> RobotDriverUnitreeG1::get_base_height_limits() const
+{
+    return impl_->base_height_limits_;
 }
 
 std::vector<LeggedRobotDriver::LimbEntry> RobotDriverUnitreeG1::get_limbs() const
