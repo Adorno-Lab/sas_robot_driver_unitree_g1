@@ -12,12 +12,16 @@
  *   ./g1_stand_height_test eth0              # 0.0 (the same as LocoClient::LowStand()), then back
  *   ./g1_stand_height_test eth0 0.7 0.6 0.5  # each target in turn, then back
  *
- * After the targets (or after Ctrl+C), the initial stand height is sent again.
+ * After the targets (or after Ctrl+C), the initial stand height is sent again. If the robot does not report it
+ * (GetStandHeight fails), the targets are still sent, and the test ends with the highest stand height instead (the
+ * value of LocoClient::HighStand()).
  */
 #include <atomic>
 #include <chrono>
 #include <csignal>
+#include <cstdint>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -102,9 +106,10 @@ int main(int argc, char** argv)
     const int32_t code = client.GetStandHeight(initial_height);
     if (code != 0)
     {
-        std::cerr << "GetStandHeight failed (code " << code << "). The initial height could not be read, so the test "
-                     "stops here." << std::endl;
-        return 1;
+        // The same value as LocoClient::HighStand().
+        initial_height = static_cast<float>(std::numeric_limits<uint32_t>::max());
+        std::cerr << "GetStandHeight failed (code " << code << "). The test ends with the highest stand height "
+                     "(LocoClient::HighStand()) instead of the initial one." << std::endl;
     }
 
     for (const auto& target_height : target_heights)
@@ -116,7 +121,7 @@ int main(int argc, char** argv)
 
     // Back to the initial height, also after Ctrl+C.
     kill_this_process = false;
-    std::cout << "Back to the initial stand height." << std::endl;
+    std::cout << "Back to the initial stand height (or the highest one)." << std::endl;
     _set_stand_height(client, initial_height);
     return 0;
 }
