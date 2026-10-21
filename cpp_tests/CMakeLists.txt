@@ -5,6 +5,8 @@ project(sas_robot_driver_unitree_g1_cpp_tests)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# unitree_sdk2 is installed in /opt/unitree_robotics, as in its instructions and in the docker image.
+list(APPEND CMAKE_PREFIX_PATH /opt/unitree_robotics)
 find_package(unitree_sdk2 REQUIRED)
 
 add_executable(g1_stand_height_test g1_stand_height_test.cpp)
