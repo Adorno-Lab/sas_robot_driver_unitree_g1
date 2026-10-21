@@ -11,3 +11,6 @@ find_package(unitree_sdk2 REQUIRED)
 
 add_executable(g1_stand_height_test g1_stand_height_test.cpp)
 target_link_libraries(g1_stand_height_test unitree_sdk2)
+
+add_executable(g1_squat_test g1_squat_test.cpp)
+target_link_libraries(g1_squat_test unitree_sdk2)

@@ -24,7 +24,7 @@
  *
  * Results on our G1 (3-DoF waist, 2026-10-21): GetBalanceMode and GetStandHeight return 7301 ("LocoState not
  * available") in FSM 801 and 501. In 501, SetStandHeight returns 0, but the robot does not move (as in
- * unitree_sdk2_python issue #138). FSM 500 (LocoClient::Start()) has not been tested yet.
+ * unitree_sdk2_python issue #138). LocoClient::Start() (FSM 500) leaves the robot in 501.
  */
 #include <atomic>
 #include <chrono>
