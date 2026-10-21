@@ -1,30 +1,4 @@
-/**
- * Test of the squat of the Unitree G1, to lower the base (e.g. to reach an object on the ground). It uses unitree_sdk2
- * directly, without ROS and without the driver, and prints the return code of every call (0 means that the robot
- * accepted it) and the FSM of the robot.
- *
- * The robot must already be walking in the regular mode (FSM 501), keeping the balance. Each step waits for Enter,
- * and asks before the riskier ones, so that the operator decides after looking at the robot. Use a gantry.
- *   1. Squat: SetFsmId(706), as StandUp2Squat() of unitree_sdk2_python (g1_loco_client.py). The C++ LocoClient
- *      has no StandUp2Squat(); its Squat() is SetFsmId(2), which can be tested by passing 2 as the squat FSM ID.
- *   2. Stand up: SetFsmId(706) again. If the robot does not stand up, the test offers the sequence of
- *      Squat2StandUp in the example of unitree_sdk2_python: Damp() (the robot goes limp and sits down), then
- *      SetFsmId(706).
- *   3. Back to the regular mode: SetFsmId(501). It can be skipped, to switch with the remote instead.
- *
- * Build (from the root of this repository; unitree_sdk2 installed in /opt/unitree_robotics):
- *   cmake -S cpp_tests -B cpp_tests/build
- *   cmake --build cpp_tests/build
- *
- * Usage:
- *   ./cpp_tests/build/g1_squat_test <network_interface> [squat_fsm_id]
- *   ./cpp_tests/build/g1_squat_test enp6s0      # squat with FSM 706
- *   ./cpp_tests/build/g1_squat_test enp6s0 2    # squat with FSM 2 (LocoClient::Squat())
- * The network interface is the one connected to the robot: e.g. enp6s0 on a desktop (with an address in
- * 192.168.123.x), or eth0 on the onboard computer.
- *
- * Ctrl+C stops the test and leaves the robot in its current state.
- */
+
 #include <chrono>
 #include <cstdint>
 #include <iostream>
