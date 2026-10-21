@@ -7,24 +7,6 @@
  * stand height and the getters: it does not change the FSM and does not send velocities, so the joystick keeps
  * working during the test.
  *
- * Build (from the root of this repository; unitree_sdk2 installed in /opt/unitree_robotics):
- *   cmake -S cpp_tests -B cpp_tests/build
- *   cmake --build cpp_tests/build
- *
- * Usage:
- *   ./cpp_tests/build/g1_stand_height_test <network_interface> [height_1 height_2 ...]
- *   ./cpp_tests/build/g1_stand_height_test enp6s0             # 0.0 (the same as LocoClient::LowStand()), then back
- *   ./cpp_tests/build/g1_stand_height_test enp6s0 0.7 0.6 0.5 # each target in turn, then back
- * The network interface is the one connected to the robot: e.g. enp6s0 on a desktop (with an address in
- * 192.168.123.x), or eth0 on the onboard computer.
- *
- * After the targets (or after Ctrl+C), the initial stand height is sent again. If the robot does not report it
- * (GetStandHeight fails), the targets are still sent, and the test ends with the highest stand height instead (the
- * value of LocoClient::HighStand()).
- *
- * Results on our G1 (3-DoF waist, 2026-10-21): GetBalanceMode and GetStandHeight return 7301 ("LocoState not
- * available") in FSM 801 and 501. In 501, SetStandHeight returns 0, but the robot does not move (as in
- * unitree_sdk2_python issue #138). LocoClient::Start() (FSM 500) leaves the robot in 501.
  */
 #include <atomic>
 #include <chrono>
