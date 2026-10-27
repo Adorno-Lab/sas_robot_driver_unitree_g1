@@ -61,13 +61,15 @@ int main(int argc, char** argv)
         configuration.robot_driver_ros.robot_driver_provider_prefix = node->get_name();
         sas::get_ros_parameter(node, "thread_sampling_time_sec", configuration.robot_driver_ros.thread_sampling_time_sec);
         sas::get_ros_optional_parameter(node, "twist_timeout_sec", configuration.twist_timeout_sec, 0.2);
+        sas::get_ros_optional_parameter(node, "arm_release_delay_sec", robot_configuration.arm_release_delay_sec, 0.0);
 
         RCLCPP_INFO_STREAM_ONCE(node->get_logger(), "::Parameters OK: control_level " << control_level
                                                     << ", domain_id " << domain_id
                                                     << ", network_interface " << robot_configuration.network_interface
                                                     << ", prefix " << node->get_fully_qualified_name()
                                                     << ", thread_sampling_time_sec " << configuration.robot_driver_ros.thread_sampling_time_sec
-                                                    << ", twist_timeout_sec " << configuration.twist_timeout_sec);
+                                                    << ", twist_timeout_sec " << configuration.twist_timeout_sec
+                                                    << ", arm_release_delay_sec " << robot_configuration.arm_release_delay_sec);
 
         auto robot_driver = std::make_shared<sas::RobotDriverUnitreeG1>(robot_configuration, shutdown_signaler);
 

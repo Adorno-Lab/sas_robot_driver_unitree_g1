@@ -1,8 +1,12 @@
 #include <sas_robot_driver_unitree_g1/sas_robot_driver_unitree_g1.hpp>
 #include "DriverUnitreeG1.h"
 #include "RobotDriverUnitreeG1Limb.h"
+#include <chrono>
+#include <cmath>
+#include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <thread>
 
 namespace sas
 {
@@ -61,6 +65,10 @@ class RobotDriverUnitreeG1::Impl
 {
 public:
     RobotDriverUnitreeG1Configuration::CONTROL_LEVEL control_level_;
+    double arm_release_delay_sec_{0.0};
+    // The shutdown signal of hardware_, triggered by deinitialize() after arm_release_delay_sec_ (not the one of the
+    // node: its threads would release the arms as soon as SIGINT arrives).
+    std::shared_ptr<ShutdownSignaler> hardware_shutdown_signaler_;
     std::shared_ptr<DriverUnitreeG1> hardware_;
     std::vector<LimbEntry> limbs_;
     std::vector<bool> commandable_in_standing_;
@@ -77,8 +85,12 @@ RobotDriverUnitreeG1::RobotDriverUnitreeG1(const RobotDriverUnitreeG1Configurati
     if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
         throw std::runtime_error("RobotDriverUnitreeG1: the low-level control (commands through rt/lowcmd) "
                                  "is not implemented yet. Use the high-level control.");
+    if (!std::isfinite(configuration.arm_release_delay_sec) || configuration.arm_release_delay_sec < 0.0)
+        throw std::invalid_argument("RobotDriverUnitreeG1: arm_release_delay_sec must be non-negative.");
+    impl_->arm_release_delay_sec_ = configuration.arm_release_delay_sec;
 
-    impl_->hardware_ = std::make_shared<DriverUnitreeG1>(shutdown_signaler,
+    impl_->hardware_shutdown_signaler_ = std::make_shared<ShutdownSignaler>();
+    impl_->hardware_ = std::make_shared<DriverUnitreeG1>(impl_->hardware_shutdown_signaler_,
                                                          DriverUnitreeG1::OPERATION_MODE::HIGH_LEVEL,
                                                          configuration.domain_id,
                                                          configuration.network_interface);
@@ -117,6 +129,23 @@ void RobotDriverUnitreeG1::initialize()
 
 void RobotDriverUnitreeG1::deinitialize()
 {
+    // Stop the base, and hold the arms at their last commanded pose for arm_release_delay_sec, before releasing them
+    // (the ramp of the blend weight of rt/arm_sdk to zero, in hardware_->deinitialize()).
+    try
+    {
+        impl_->hardware_->set_target_high_level_velocities({0.0, 0.0, 0.0});
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "RobotDriverUnitreeG1::deinitialize: " << e.what() << std::endl;
+    }
+    if (impl_->arm_release_delay_sec_ > 0.0)
+    {
+        std::cout << "RobotDriverUnitreeG1::deinitialize: holding the arms for " << impl_->arm_release_delay_sec_
+                  << " s before releasing them." << std::endl;
+        std::this_thread::sleep_for(std::chrono::duration<double>(impl_->arm_release_delay_sec_));
+    }
+    impl_->hardware_shutdown_signaler_->shutdown();
     impl_->hardware_->deinitialize();
 }
 

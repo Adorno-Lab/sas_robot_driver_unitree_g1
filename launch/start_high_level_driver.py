@@ -8,6 +8,11 @@ Real robot (onboard computer):
 Simulation (unitree_mujoco, DDS domain 1 on the loopback interface):
     ros2 launch sas_robot_driver_unitree_g1 start_high_level_driver.py domain_id:=1 network_interface:=lo
 
+When the driver stops (Ctrl+C, or the shutdown signal), it holds the arms for arm_release_delay_sec (0 by default)
+before giving them back to the locomotion controller (which moves them to Unitree's default pose), e.g. so that the
+hands open first:
+    ros2 launch sas_robot_driver_unitree_g1 start_high_level_driver.py arm_release_delay_sec:=2.0
+
 The control level sets how the commands are sent; both levels read the state of the robot from rt/lowstate. It
 is high by default (commands through the locomotion controller and rt/arm_sdk). control_level:=low selects the
 low-level control (commands through rt/lowcmd), which is not implemented yet: the driver stops with an error.
@@ -44,6 +49,11 @@ def generate_launch_description():
             default_value='high',
             description='How the commands are sent (the state is always read from rt/lowstate): "high" (locomotion controller and rt/arm_sdk) or "low" (rt/lowcmd; not implemented yet).'
         ),
+        DeclareLaunchArgument(
+            'arm_release_delay_sec',
+            default_value='0.0',
+            description='When the driver stops, the arms hold their last pose this long (s) before they are given back to the locomotion controller (e.g. so that the hands open first).'
+        ),
         Node(
             package='sas_robot_driver_unitree_g1',
             executable='sas_robot_driver_unitree_g1_node',
@@ -56,6 +66,7 @@ def generate_launch_description():
                 'thread_sampling_time_sec': 0.002,
                 'twist_timeout_sec': 0.2,
                 'control_level': ParameterValue(LaunchConfiguration('control_level'), value_type=str),
+                'arm_release_delay_sec': ParameterValue(LaunchConfiguration('arm_release_delay_sec'), value_type=float),
             }]
         ),
     ])

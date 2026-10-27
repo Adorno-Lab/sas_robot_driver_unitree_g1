@@ -27,6 +27,11 @@ struct RobotDriverUnitreeG1Configuration
     int32_t domain_id;              ///< DDS domain: 0 for the real robot, 1 for the simulation.
     std::string network_interface;  ///< e.g. "eth0" on the onboard computer, or "enp6s0" on a desktop.
     CONTROL_LEVEL control_level{CONTROL_LEVEL::HIGH_LEVEL};
+    /// When the driver stops (deinitialize(): after SIGINT, or the shutdown signal of the clients), it stops the
+    /// base, and holds the arms at their last commanded pose this long (s, non-negative) before giving them back to
+    /// the locomotion controller, which moves them to Unitree's default pose (in about 5 s). For instance, so that the
+    /// hands (a separate driver, stopped at the same time) open before the arms move.
+    double arm_release_delay_sec{0.0};
 };
 
 /**
