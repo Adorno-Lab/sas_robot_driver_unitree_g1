@@ -40,7 +40,7 @@ The G1 is a floating base with five limbs. Each limb is a standard SAS robot dri
 
 | Prefix | Topics |
 |---|---|
-| `sas_g1/g1_1/` (base) | `get/info`, `get/status`, `get/imu`, `set/high_level_mode`, `set/target_twist`, `set/watchdog_trigger`, `set/shutdown` |
+| `sas_g1/g1_1/` (base) | `get/info`, `get/status`, `get/imu`, `get/battery_state`, `set/high_level_mode`, `set/target_twist`, `set/watchdog_trigger`, `set/shutdown` |
 | `sas_g1/g1_1/<limb>/` | the standard SAS joint topics: `get/joint_states`, `get/joint_positions_min`, `get/joint_positions_max`, `set/target_joint_positions`, `set/shutdown` |
 
 See the [topic standard of sas_tools](https://github.com/Adorno-Lab/sas_tools/tree/new_generation#topic-standard) for the message types,
@@ -91,6 +91,7 @@ limb_prefixes: ["sas_g1/g1_1/left_leg", "sas_g1/g1_1/right_leg", "sas_g1/g1_1/wa
 
 - `unitree_mujoco` only simulates the low-level interface (`rt/lowstate`, `rt/lowcmd`). In the simulator, the driver
   reads the joint states and the IMU, but it cannot walk or move the arms, since there is no locomotion service and
-  no `rt/arm_sdk`.
+  no `rt/arm_sdk`. It does not publish the battery either (`rt/lf/bmsstate`), so `get/battery_state` is not
+  published in the simulator.
 - Without a locomotion service (e.g. no robot connected), stopping the driver waits for the pending RPC calls of the
   locomotion client of unitree_drivers.

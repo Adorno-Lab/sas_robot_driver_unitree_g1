@@ -1,6 +1,7 @@
 #include <sas_robot_driver_unitree_g1/sas_robot_driver_unitree_g1.hpp>
 #include "DriverUnitreeG1.h"
 #include "RobotDriverUnitreeG1Limb.h"
+#include <limits>
 #include <stdexcept>
 
 namespace sas
@@ -184,6 +185,20 @@ DQ RobotDriverUnitreeG1::get_linear_acceleration()
     return DQ(0, imu_data.accelerometer.at(0), imu_data.accelerometer.at(1), imu_data.accelerometer.at(2));
 }
 
+double RobotDriverUnitreeG1::get_battery_percentage()
+{
+    // DriverUnitreeLowState throws until the first battery message arrives, and an exception would end the
+    // control loop of LeggedRobotDriverROS.
+    try
+    {
+        return impl_->hardware_->get_state_of_charge();
+    }
+    catch (const std::runtime_error&)
+    {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+}
+
 std::vector<LeggedRobotDriver::HIGH_LEVEL_MODE> RobotDriverUnitreeG1::get_supported_high_level_modes() const
 {
     if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
@@ -193,6 +208,8 @@ std::vector<LeggedRobotDriver::HIGH_LEVEL_MODE> RobotDriverUnitreeG1::get_suppor
 
 bool RobotDriverUnitreeG1::is_supported(const LEGGED_FUNCTIONALITY &functionality) const
 {
+    if (functionality == LEGGED_FUNCTIONALITY::BATTERY)
+        return true;  // A state reading, available in both control levels.
     if (impl_->control_level_ == RobotDriverUnitreeG1Configuration::CONTROL_LEVEL::LOW_LEVEL)
         return false;  // No locomotion controller: no twist, base height, or base orientation.
     return functionality == LEGGED_FUNCTIONALITY::TWIST;
