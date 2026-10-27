@@ -33,7 +33,8 @@ struct RobotDriverUnitreeG1Configuration
  * @brief The RobotDriverUnitreeG1 class is the LeggedRobotDriver of the Unitree G1 (29 DoF). It does
  *        not use ROS; run it with LeggedRobotDriverROS.
  *
- * The state of the robot (joints and IMU) is always read from rt/lowstate. The capabilities depend on
+ * The state of the robot (joints and IMU) is always read from rt/lowstate, and the battery from
+ * rt/lf/bmsstate (get/battery_state, LEGGED_FUNCTIONALITY::BATTERY). The capabilities depend on
  * RobotDriverUnitreeG1Configuration::CONTROL_LEVEL, which sets how the commands are sent. Only
  * HIGH_LEVEL is implemented: Unitree's locomotion controller moves the legs, and rt/arm_sdk moves the
  * arms and the waist. The rest of this description is about HIGH_LEVEL. (LOW_LEVEL is planned to command every
@@ -125,14 +126,20 @@ public:
     DQ get_linear_acceleration() override;
 
     /**
+     * @brief get_battery_percentage Returns the state of charge of the battery (rt/lf/bmsstate).
+     * @return The state of charge, in percent ([0, 100]), or NaN until the first battery message arrives.
+     */
+    double get_battery_percentage() override;
+
+    /**
      * @brief get_supported_high_level_modes Returns IDLE, STANDING, and WALKING in HIGH_LEVEL, and IDLE
      *        and STANDING in LOW_LEVEL.
      */
     std::vector<HIGH_LEVEL_MODE> get_supported_high_level_modes() const override;
 
     /**
-     * @brief is_supported Returns true only for LEGGED_FUNCTIONALITY::TWIST in HIGH_LEVEL, and false
-     *        for every functionality in LOW_LEVEL.
+     * @brief is_supported Returns true for LEGGED_FUNCTIONALITY::BATTERY in both levels, and for
+     *        LEGGED_FUNCTIONALITY::TWIST in HIGH_LEVEL only. False for the rest.
      */
     bool is_supported(const LEGGED_FUNCTIONALITY& functionality) const override;
 

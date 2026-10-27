@@ -639,6 +639,16 @@ DriverUnitreeLowState::IMUData DriverUnitreeG1::get_imu_data()
     return low_state_.get_imu_data();
 }
 
+/**
+ * @brief Returns the last reported state of charge of the battery.
+ * @return The state of charge, in percent ([0, 100]), read from rt/lf/bmsstate by low_state_.
+ * @throws std::runtime_error if no battery message has been received yet.
+ */
+double DriverUnitreeG1::get_state_of_charge()
+{
+    return low_state_.get_state_of_charge();
+}
+
 // --- Per-limb (and torso) telemetry API (available in both operation modes) ---
 
 /**

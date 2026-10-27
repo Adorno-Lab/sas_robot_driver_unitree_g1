@@ -354,6 +354,9 @@ public:
     /// Returns the last received IMU reading. Not a joint position; kept as
     /// DriverUnitreeLowState::IMUData (see that class for its fields).
     DriverUnitreeLowState::IMUData get_imu_data();
+    /// Returns the last reported state of charge of the battery, in percent ([0, 100]), read from rt/lf/bmsstate
+    /// by low_state_. Throws std::runtime_error if no battery message has been received yet.
+    double get_state_of_charge();
 
     // --- Per-limb (and torso) telemetry (delegates to low_state_; available in BOTH operation modes) ---
     // Reuses DriverUnitreeLowState::LIMB directly rather than duplicating it as a
